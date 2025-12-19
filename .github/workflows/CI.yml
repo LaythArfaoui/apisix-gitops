@@ -1,3 +1,4 @@
+
 name: Deploy APISIX Declarative Config
 
 on:
@@ -9,23 +10,34 @@ on:
 jobs:
   deploy:
     runs-on: self-hosted   # or ubuntu-latest
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-
+      
       - name: Validate file exists
         run: |
-          ls -lah
           ls -lah apisix.yaml
-
+      
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+      
+      - name: Install ADC
+        run: |
+          echo "Installing APISIX Declarative CLI (ADC)"
+          go install github.com/api7/adc@latest
+          echo "$HOME/go/bin" >> $GITHUB_PATH
+      
+      - name: Verify ADC Installation
+        run: |
+          adc version
+      
       - name: Apply APISIX Declarative Config
         env:
-          APISIX_ADMIN_URL: http://localhost:9180
           APISIX_ADMIN_KEY: ${{ secrets.APISIX_ADMIN_KEY }}
         run: |
-          echo "Applying APISIX declarative config"
-          curl -X PUT "http://localhost:9180/apisix/admin/configs" \
-            -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
-            -H "Content-Type: application/yaml" \
-            --data-binary "@apisix.yaml"
+          echo "Applying APISIX declarative config with ADC"
+          adc sync -f apisix.yaml \
+            --server http://localhost:9180 \
+            --token "$edd1c9f034335f136f87ad84b625c8f1"
