@@ -4,8 +4,7 @@ name: Deploy APISIX Declarative Config
 on:
   push:
     branches: [ main ]
-    paths:
-      - "apisix.yaml"
+
 
 jobs:
   deploy:
