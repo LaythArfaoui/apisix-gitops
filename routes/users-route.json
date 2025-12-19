@@ -1,10 +1,10 @@
 {
-  "uri": "/api/v1/users",
-  "methods": ["GET", "POST"],
+  "uri": "/api/v1/hello",
+  "methods": ["GET"],
   "upstream": {
     "type": "roundrobin",
     "nodes": {
-      "users-service:8080": 1
+      "backend:8080": 1
     }
   }
 }

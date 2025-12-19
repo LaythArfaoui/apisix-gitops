@@ -20,7 +20,7 @@ jobs:
           APISIX_ADMIN_KEY: ${{ secrets.APISIX_ADMIN_KEY }}
         run: |
           ROUTE_ID=hello-route
-          ROUTE_FILE=APISIX-GITOPS/routes/users-route.json
+          ROUTE_FILE=./routes/users-route.json
 
           echo "Applying route $ROUTE_ID"
 
