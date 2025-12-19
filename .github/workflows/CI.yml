@@ -4,6 +4,8 @@ name: Deploy APISIX Declarative Config
 on:
   push:
     branches: [ main ]
+    paths:
+      - "apisix.yaml"
 
 jobs:
   deploy:
@@ -27,8 +29,18 @@ jobs:
       
       - name: Verify ADC Installation
         run: |
-          adc version
+          adc -V
           echo "ADC installed successfully"
+      
+      - name: Test APISIX Connectivity
+        env:
+          APISIX_ADMIN_KEY: ${{ secrets.APISIX_ADMIN_KEY }}
+        run: |
+          echo "Testing connection to APISIX"
+          adc ping \
+            --backend apisix \
+            --server http://localhost:9180 \
+            --token "$APISIX_ADMIN_KEY"
       
       - name: Apply APISIX Declarative Config
         env:
@@ -36,6 +48,7 @@ jobs:
         run: |
           echo "Applying APISIX declarative config with ADC"
           adc sync -f apisix.yaml \
+            --backend apisix \
             --server http://localhost:9180 \
             --token "edd1c9f034335f136f87ad84b625c8f1"
           echo "Configuration applied successfully!"
