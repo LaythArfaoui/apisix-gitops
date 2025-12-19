@@ -1,0 +1,21 @@
+name: APISIX GitOps Deployment
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy APISIX config
+        env:
+          APISIX_ADMIN_URL: ${{ secrets.APISIX_ADMIN_URL }}
+          APISIX_ADMIN_KEY: ${{ secrets.APISIX_ADMIN_KEY }}
+        run: |
+          ./scripts/deploy-apisix.sh
