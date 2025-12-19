@@ -1,0 +1,38 @@
+routes:
+  - id: hello-route
+    uri: /hello
+    methods: ["GET"]
+    upstream_id: hello-upstream
+
+upstreams:
+  - id: hello-upstream
+    nodes:
+      "127.0.0.1:8080": 1
+    type: roundrobin
+
+services:
+  - id: hello-service
+    upstream_id: hello-upstream
+
+consumers:
+  - username: demo-user
+    plugins:
+      key-auth:
+        key: my-secret-key
+
+global_rules:
+  - id: global-cors
+    plugins:
+      cors:
+        allow_origins: "*"
+
+stream_routes:
+  - id: tcp-route-1
+    server_addr: "0.0.0.0"
+    server_port: 9100
+    upstream_id: tcp-upstream
+
+stream_upstreams:
+  - id: tcp-upstream
+    nodes:
+      "127.0.0.1:9000": 1

@@ -1,30 +1,31 @@
-name: APISIX Routes CI
+name: Deploy APISIX Declarative Config
 
 on:
   push:
-    branches:
-      - main
-  workflow_dispatch:
+    branches: [ main ]
+    paths:
+      - "apisix.yaml"
 
 jobs:
-  apply-routes:
-    runs-on: self-hosted
+  deploy:
+    runs-on: self-hosted   # or ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Apply APISIX route
+      - name: Validate file exists
+        run: |
+          ls -lah
+          ls -lah apisix.yaml
+
+      - name: Apply APISIX Declarative Config
         env:
-          APISIX_ADMIN_URL: ${{ secrets.APISIX_ADMIN_URL }}
+          APISIX_ADMIN_URL: http://localhost:9180
           APISIX_ADMIN_KEY: ${{ secrets.APISIX_ADMIN_KEY }}
         run: |
-          ROUTE_ID=hello-route
-          ROUTE_FILE=./routes/users-route.json
-
-          echo "Applying route $ROUTE_ID"
-
-          curl -X PUT "http://localhost:9180/apisix/admin/routes/apisix/admin/routes/$ROUTE_ID" \
+          echo "Applying APISIX declarative config"
+          curl -X PUT "http://localhost:9180/apisix/admin/configs" \
             -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
-            -H "Content-Type: application/json" \
-            -d @"$ROUTE_FILE"
+            -H "Content-Type: application/yaml" \
+            --data-binary "@apisix.yaml"

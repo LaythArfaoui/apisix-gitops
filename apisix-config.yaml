@@ -1,8 +1,0 @@
-routes:
-  - id: users
-    uri: /api/v1/users
-    methods: [GET, POST]
-    upstream:
-      type: roundrobin
-      nodes:
-        "users-service:8080": 1
