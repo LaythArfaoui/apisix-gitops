@@ -9,7 +9,7 @@ on:
 
 jobs:
   apisix-sync:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     env:
       ADC_SERVER: http://localhost:9180 # e.g., http://your-apisix:9180
       ADC_TOKEN: edd1c9f034335f136f87ad84b625c8f1  # APISIX Admin API Key
