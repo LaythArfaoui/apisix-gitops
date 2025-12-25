@@ -2,4 +2,4 @@
     "uri": "/api/test",
     "methods": ["GET"],
     "upstream_id": "my-backend"
-  } 
+  }  
