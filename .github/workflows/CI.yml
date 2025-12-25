@@ -129,7 +129,7 @@ jobs:
       
       - name: Deploy Services
         env:
-          APISIX_ADMIN_URL: http://localhost:9180
+          APISIX_ADMIN_URL: ${{ secrets.APISIX_ADMIN_URL }}
           APISIX_ADMIN_KEY: ${{ secrets.APISIX_ADMIN_KEY }}
         run: |
           echo "📦 Deploying Services..."
@@ -180,7 +180,7 @@ jobs:
       
       - name: Deploy Routes
         env:
-          APISIX_ADMIN_URL: http://localhost:9180
+          APISIX_ADMIN_URL: ${{ secrets.APISIX_ADMIN_URL }}
           APISIX_ADMIN_KEY: ${{ secrets.APISIX_ADMIN_KEY }}
         run: |
           echo "🛣️  Deploying Routes..."
@@ -232,7 +232,7 @@ jobs:
       
       - name: Deploy Stream Routes
         env:
-          APISIX_ADMIN_URL: http://localhost:9180
+          APISIX_ADMIN_URL: ${{ secrets.APISIX_ADMIN_URL }}
           APISIX_ADMIN_KEY: ${{ secrets.APISIX_ADMIN_KEY }}
         run: |
           echo "🌊 Deploying Stream Routes..."
@@ -275,7 +275,7 @@ jobs:
     steps:
       - name: Verify Deployment
         env:
-          APISIX_ADMIN_URL: http://localhost:9180
+          APISIX_ADMIN_URL: ${{ secrets.APISIX_ADMIN_URL }}
           APISIX_ADMIN_KEY: ${{ secrets.APISIX_ADMIN_KEY }}
         run: |
           echo "🔍 Verifying deployment..."
