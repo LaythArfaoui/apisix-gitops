@@ -1,0 +1,6 @@
+{
+    "type": "roundrobin",
+    "nodes": {
+      "httpbin.org:80": 1
+    }
+  } 
