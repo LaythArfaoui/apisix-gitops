@@ -1,6 +1,2 @@
-{
-    "type": "roundrobin",
-    "nodes": {
-      "httpbin.org:80": 1
-    }
-  }  
+{   "name": "my-backend",   "type": "roundrobin",   "scheme": "http",   "nodes": {     "httpbin.org:80": 1   } }
+ 
