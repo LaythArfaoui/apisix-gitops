@@ -48,15 +48,20 @@ jobs:
         run: |
           echo "🔍 Validating JSON files..."
           
-          # Check all JSON files
-          for file in routes/*.json services/*.json upstreams/*.json stream_routes/*.json 2>/dev/null; do
-            if [ -f "$file" ]; then
-              echo "Checking: $file"
-              if ! jq empty "$file" 2>/dev/null; then
-                echo "❌ Invalid JSON in: $file"
-                exit 1
-              fi
-              echo "✅ Valid JSON: $file"
+          # Check all JSON files in each directory
+          for dir in routes services upstreams stream_routes; do
+            if [ -d "$dir" ]; then
+              for file in "$dir"/*.json; do
+                # Check if file exists (handles case where no .json files exist)
+                if [ -f "$file" ]; then
+                  echo "Checking: $file"
+                  if ! jq empty "$file" 2>/dev/null; then
+                    echo "❌ Invalid JSON in: $file"
+                    exit 1
+                  fi
+                  echo "✅ Valid JSON: $file"
+                fi
+              done
             fi
           done
           
