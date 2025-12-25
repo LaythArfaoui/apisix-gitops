@@ -1,5 +1,10 @@
 {
-    "uri": "/api/test",
-    "methods": ["GET"],
-    "upstream_id": "my-backend"
-  }  
+  "uri": "/whatsssssuppp",
+  "methods": ["GET"],
+  "upstream": {
+    "type": "roundrobin",
+    "nodes": {
+      "httpbin.org:80": 1
+    }
+  }
+}
