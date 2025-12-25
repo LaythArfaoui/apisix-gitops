@@ -36,10 +36,37 @@ jobs:
             stream_routes:
               - 'stream_routes/**'
 
+  # Validate JSON files
+  validate-json:
+    runs-on: self-hosted
+    needs: detect-changes
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      
+      - name: Validate JSON files
+        run: |
+          echo "🔍 Validating JSON files..."
+          
+          # Check all JSON files
+          for file in routes/*.json services/*.json upstreams/*.json stream_routes/*.json 2>/dev/null; do
+            if [ -f "$file" ]; then
+              echo "Checking: $file"
+              if ! jq empty "$file" 2>/dev/null; then
+                echo "❌ Invalid JSON in: $file"
+                exit 1
+              fi
+              echo "✅ Valid JSON: $file"
+            fi
+          done
+          
+          echo ""
+          echo "✅ All JSON files are valid"
+
   # Deploy Upstreams First
   deploy-upstreams:
     runs-on: self-hosted
-    needs: detect-changes
+    needs: [detect-changes, validate-json]
     if: needs.detect-changes.outputs.upstreams == 'true'
     steps:
       - name: Checkout repo
@@ -56,21 +83,26 @@ jobs:
             if [ -f "$file" ]; then
               upstream_id=$(basename "$file" .json)
               echo "📡 Applying upstream: $upstream_id"
+              echo "File content:"
+              cat "$file"
+              echo ""
               
-              response=$(curl -s -w "\n%{http_code}" -X PUT \
+              response=$(curl -i -s -X PUT \
                 "${APISIX_ADMIN_URL}/apisix/admin/upstreams/${upstream_id}" \
                 -H "X-API-KEY: ${APISIX_ADMIN_KEY}" \
                 -H "Content-Type: application/json" \
                 -d @"$file")
               
-              http_code=$(echo "$response" | tail -n1)
-              body=$(echo "$response" | sed '$d')
+              http_code=$(echo "$response" | grep -i "^HTTP" | awk '{print $2}')
+              body=$(echo "$response" | sed -n '/^{/,/^}/p')
+              
+              echo "Response code: $http_code"
+              echo "Response body: $body"
               
               if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
                 echo "✅ Success: $upstream_id"
               else
                 echo "❌ Failed: $upstream_id ($http_code)"
-                echo "$body"
                 exit 1
               fi
               echo ""
@@ -80,10 +112,11 @@ jobs:
   # Deploy Services
   deploy-services:
     runs-on: self-hosted
-    needs: [detect-changes, deploy-upstreams]
+    needs: [detect-changes, validate-json, deploy-upstreams]
     if: |
       always() && 
       needs.detect-changes.outputs.services == 'true' &&
+      needs.validate-json.result == 'success' &&
       (needs.deploy-upstreams.result == 'success' || needs.deploy-upstreams.result == 'skipped')
     steps:
       - name: Checkout repo
@@ -100,21 +133,26 @@ jobs:
             if [ -f "$file" ]; then
               service_id=$(basename "$file" .json)
               echo "📡 Applying service: $service_id"
+              echo "File content:"
+              cat "$file"
+              echo ""
               
-              response=$(curl -s -w "\n%{http_code}" -X PUT \
+              response=$(curl -i -s -X PUT \
                 "${APISIX_ADMIN_URL}/apisix/admin/services/${service_id}" \
                 -H "X-API-KEY: ${APISIX_ADMIN_KEY}" \
                 -H "Content-Type: application/json" \
                 -d @"$file")
               
-              http_code=$(echo "$response" | tail -n1)
-              body=$(echo "$response" | sed '$d')
+              http_code=$(echo "$response" | grep -i "^HTTP" | awk '{print $2}')
+              body=$(echo "$response" | sed -n '/^{/,/^}/p')
+              
+              echo "Response code: $http_code"
+              echo "Response body: $body"
               
               if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
                 echo "✅ Success: $service_id"
               else
                 echo "❌ Failed: $service_id ($http_code)"
-                echo "$body"
                 exit 1
               fi
               echo ""
@@ -124,10 +162,11 @@ jobs:
   # Deploy Routes
   deploy-routes:
     runs-on: self-hosted
-    needs: [detect-changes, deploy-upstreams, deploy-services]
+    needs: [detect-changes, validate-json, deploy-upstreams, deploy-services]
     if: |
       always() && 
       needs.detect-changes.outputs.routes == 'true' &&
+      needs.validate-json.result == 'success' &&
       (needs.deploy-upstreams.result == 'success' || needs.deploy-upstreams.result == 'skipped') &&
       (needs.deploy-services.result == 'success' || needs.deploy-services.result == 'skipped')
     steps:
@@ -145,21 +184,32 @@ jobs:
             if [ -f "$file" ]; then
               route_id=$(basename "$file" .json)
               echo "📡 Applying route: $route_id"
+              echo "File content:"
+              cat "$file"
+              echo ""
               
-              response=$(curl -s -w "\n%{http_code}" -X PUT \
+              # Use curl with -i to get full response including headers
+              response=$(curl -i -s -X PUT \
                 "${APISIX_ADMIN_URL}/apisix/admin/routes/${route_id}" \
                 -H "X-API-KEY: ${APISIX_ADMIN_KEY}" \
                 -H "Content-Type: application/json" \
                 -d @"$file")
               
-              http_code=$(echo "$response" | tail -n1)
-              body=$(echo "$response" | sed '$d')
+              # Extract HTTP status code from headers
+              http_code=$(echo "$response" | grep -i "^HTTP" | awk '{print $2}')
+              
+              # Extract JSON body (only lines that start with { or are part of JSON)
+              body=$(echo "$response" | sed -n '/^{/,/^}/p')
+              
+              echo "Response code: $http_code"
+              echo "Response body: $body"
               
               if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
                 echo "✅ Success: $route_id"
               else
                 echo "❌ Failed: $route_id ($http_code)"
-                echo "$body"
+                echo "Full response:"
+                echo "$response"
                 exit 1
               fi
               echo ""
@@ -169,10 +219,11 @@ jobs:
   # Deploy Stream Routes
   deploy-stream-routes:
     runs-on: self-hosted
-    needs: [detect-changes, deploy-upstreams]
+    needs: [detect-changes, validate-json, deploy-upstreams]
     if: |
       always() && 
       needs.detect-changes.outputs.stream_routes == 'true' &&
+      needs.validate-json.result == 'success' &&
       (needs.deploy-upstreams.result == 'success' || needs.deploy-upstreams.result == 'skipped')
     steps:
       - name: Checkout repo
@@ -189,21 +240,26 @@ jobs:
             if [ -f "$file" ]; then
               route_id=$(basename "$file" .json)
               echo "📡 Applying stream route: $route_id"
+              echo "File content:"
+              cat "$file"
+              echo ""
               
-              response=$(curl -s -w "\n%{http_code}" -X PUT \
+              response=$(curl -i -s -X PUT \
                 "${APISIX_ADMIN_URL}/apisix/admin/stream_routes/${route_id}" \
                 -H "X-API-KEY: ${APISIX_ADMIN_KEY}" \
                 -H "Content-Type: application/json" \
                 -d @"$file")
               
-              http_code=$(echo "$response" | tail -n1)
-              body=$(echo "$response" | sed '$d')
+              http_code=$(echo "$response" | grep -i "^HTTP" | awk '{print $2}')
+              body=$(echo "$response" | sed -n '/^{/,/^}/p')
+              
+              echo "Response code: $http_code"
+              echo "Response body: $body"
               
               if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
                 echo "✅ Success: $route_id"
               else
                 echo "❌ Failed: $route_id ($http_code)"
-                echo "$body"
                 exit 1
               fi
               echo ""
@@ -226,6 +282,7 @@ jobs:
           
           echo "📊 Deployment Summary:"
           echo "===================="
+          echo "Validation: ${{ needs.validate-json.result }}"
           echo "Upstreams: ${{ needs.deploy-upstreams.result }}"
           echo "Services: ${{ needs.deploy-services.result }}"
           echo "Routes: ${{ needs.deploy-routes.result }}"

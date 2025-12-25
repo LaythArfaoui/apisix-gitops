@@ -1,10 +1,7 @@
 {
-  "uri": "/whatsssssuppp",
-  "methods": ["GET"],
-  "upstream": {
-    "type": "roundrobin",
-    "nodes": {
-      "httpbin.org:80": 1
-    }
-  }
+  "uri": "/users/*",
+  "name": "users-route",
+  "methods": ["GET", "POST", "PUT", "DELETE"],
+  "upstream_id": "users-upstream",
+  "plugins": {}
 }
